@@ -32,7 +32,7 @@ export const getAllCategoriesQuery = async () => {
     `
       SELECT *
       FROM categories
-      WHERE deleted_at IS NULL
+      WHERE is_active = TRUE
       ORDER BY id DESC
     `,
   );

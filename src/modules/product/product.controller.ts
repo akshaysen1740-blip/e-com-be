@@ -30,7 +30,7 @@ export const createProductController = async (
 ) => {
   try {
     const validatedData = createProductSchema.parse(req.body);
-
+    console.log(validatedData)
     const result = await createProductService({
       ...validatedData,
       createdBy: (req as any).user.id,

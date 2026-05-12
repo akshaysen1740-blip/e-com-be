@@ -12,7 +12,7 @@ export const findCategoryByIdQuery = async (categoryId: number) => {
       SELECT id
       FROM categories
       WHERE id = ?
-        AND deleted_at IS NULL
+        AND is_active = TRUE
       LIMIT 1
     `,
     [categoryId],
