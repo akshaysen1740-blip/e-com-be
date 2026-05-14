@@ -52,8 +52,10 @@ export const getSubcategoriesController = async (
 ) => {
   try {
     const { categoryId } = subcategoryCategoryIdSchema.parse(req.query);
+    console.log(categoryId, "categoryId");
     const result = await getAllSubcategoriesService(categoryId);
 
+    console.log(result, "result");
     res.status(200).json({
       success: true,
       data: result,

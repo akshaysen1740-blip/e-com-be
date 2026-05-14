@@ -1,20 +1,58 @@
 import { z } from "zod";
 
+const preprocessNumber = (value: unknown) => {
+  if (value === undefined || value === null || value === "") {
+    return value;
+  }
+
+  const parsedValue =
+    typeof value === "string" ? Number(value.trim()) : Number(value);
+
+  return Number.isNaN(parsedValue) ? value : parsedValue;
+};
+
+const positiveIntNumber = (fieldLabel: string) =>
+  z.preprocess(
+    preprocessNumber,
+    z
+      .number({ error: `${fieldLabel} must be a valid number` })
+      .int(`${fieldLabel} must be an integer`)
+      .positive(`${fieldLabel} must be a positive number`),
+  );
+
+const optionalPositiveIntNumber = (fieldLabel: string) =>
+  z.preprocess(preprocessNumber, positiveIntNumber(fieldLabel).optional());
+
+const positiveNumber = (fieldLabel: string) =>
+  z.preprocess(
+    preprocessNumber,
+    z.number({ error: `${fieldLabel} must be a valid number` }).positive(
+      `${fieldLabel} must be greater than 0`,
+    ),
+  );
+
+const optionalPositiveNumber = (fieldLabel: string) =>
+  z.preprocess(preprocessNumber, positiveNumber(fieldLabel).optional());
+
+const optionalNonNegativeNumber = (fieldLabel: string) =>
+  z.preprocess(
+    preprocessNumber,
+    z
+      .number({ error: `${fieldLabel} must be a valid number` })
+      .min(0, `${fieldLabel} cannot be negative`)
+      .optional(),
+  );
+
 export const createProductSchema = z.object({
-  subcategoryId: z.coerce
-    .number()
-    .int()
-    .positive("Subcategory id must be a positive number"),
+  subcategoryId: positiveIntNumber("Subcategory id"),
   name: z.string().min(2, "Name must be at least 2 characters").max(255),
   description: z.string().optional(),
   sku: z.string().optional(),
-  price: z.coerce.number().positive("Price must be greater than 0"),
-  comparePrice: z.coerce
-    .number()
-    .positive("Compare price must be greater than 0")
-    .optional(),
-  stock: z.coerce.number().min(0, "Stock cannot be negative").optional(),
-  thumbnailUrl: z.string()
+  price: positiveNumber("Price"),
+  comparePrice: optionalPositiveNumber("Compare price"),
+  stock: optionalNonNegativeNumber("Stock"),
+  thumbnailUrl: z.string(),
+  categoryId : positiveIntNumber("Category id"),
 });
 
 export const updateProductSchema = createProductSchema
@@ -35,12 +73,9 @@ export const updateProductSchema = createProductSchema
   );
 
 export const productIdSchema = z.object({
-  id: z.coerce.number().int().positive("Product id must be a positive number"),
+  id: positiveIntNumber("Product id"),
 });
 
 export const productSubcategoryIdSchema = z.object({
-  subcategoryId: z.coerce
-    .number()
-    .int()
-    .positive("Subcategory id must be a positive number"),
+  subcategoryId: optionalPositiveIntNumber("Subcategory id"),
 });

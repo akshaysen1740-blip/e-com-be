@@ -25,6 +25,7 @@ export interface CreateProductDto {
   stock?: number;
   thumbnailUrl?: string;
   createdBy: number;
+  categoryId : number
 }
 
 export interface UpdateProductDto {

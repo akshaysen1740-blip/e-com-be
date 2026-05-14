@@ -1,10 +1,14 @@
 import pool from "../../config/db";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
-import { Category, CreateCategoryDto, UpdateCategoryDto } from "./category.types";
+import {
+  Category,
+  CreateCategoryDto,
+  UpdateCategoryDto,
+} from "./category.types";
 
 export const createCategoryQuery = async (
   data: CreateCategoryDto,
-  slug: string
+  slug: string,
 ) => {
   const [result] = await pool.execute<ResultSetHeader>(
     `
@@ -16,12 +20,7 @@ export const createCategoryQuery = async (
       )
       VALUES (?, ?, ?, ?)
     `,
-    [
-      data.name,
-      slug,
-      data.description || null,
-      data.createdBy,
-    ]
+    [data.name, slug, data.description || null, data.createdBy],
   );
 
   return result.insertId;
@@ -30,10 +29,16 @@ export const createCategoryQuery = async (
 export const getAllCategoriesQuery = async () => {
   const [rows] = await pool.execute<(Category & RowDataPacket)[]>(
     `
-      SELECT *
-      FROM categories
-      WHERE is_active = TRUE
-      ORDER BY id DESC
+      SELECT 
+          c.*,
+          COUNT(p.id) AS product_count
+      FROM categories c
+      LEFT JOIN products p 
+          ON p.category_id = c.id
+          AND p.is_active = TRUE
+      WHERE c.is_active = TRUE
+      GROUP BY c.id
+      ORDER BY c.id DESC;
     `,
   );
 

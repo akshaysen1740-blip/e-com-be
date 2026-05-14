@@ -4,6 +4,7 @@ import useAuth from "./modules/auth/auth.routes";
 import categoryRoutes from "./modules/category/category.routes";
 import subcategoryRoutes from "./modules/subcategory/subcategory.routes";
 import productRoutes from "./modules/product/product.routes";
+import uploadRoutes from "./modules/upload/upload.routes";
 
 export const router = express.Router();
 
@@ -12,3 +13,4 @@ router.use("/auth", useAuth);
 router.use("/categories", categoryRoutes);
 router.use("/subcategories", subcategoryRoutes);
 router.use("/products", productRoutes);
+router.use("/upload", uploadRoutes);

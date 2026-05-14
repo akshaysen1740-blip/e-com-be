@@ -1,6 +1,8 @@
 import { AppError } from "../../utills/AppErrors";
 import { slugify } from "../../utills/slugyfy";
+import { findCategoryByIdQuery } from "../subcategory/subcategory.model";
 import {
+  getAllProductsQuery,
   createProductQuery,
   findProductByNameQuery,
   findSubcategoryByIdQuery,
@@ -23,9 +25,13 @@ const validateComparePrice = (price?: number, comparePrice?: number) => {
 
 export const createProductService = async (data: CreateProductDto) => {
   const subcategory = await findSubcategoryByIdQuery(data.subcategoryId);
-
+  const categoryId = await findCategoryByIdQuery(data.categoryId);
   if (!subcategory) {
     throw new AppError("Subcategory not found", 404);
+  }
+
+  if(!categoryId){
+    throw new AppError("Category not found", 404);
   }
 
   const existingProduct = await findProductByNameQuery(
@@ -48,7 +54,11 @@ export const createProductService = async (data: CreateProductDto) => {
   };
 };
 
-export const getAllProductsService = async (subcategoryId: number) => {
+export const getAllProductsService = async (subcategoryId?: number) => {
+  if (subcategoryId === undefined) {
+    return getAllProductsQuery();
+  }
+
   const subcategory = await findSubcategoryByIdQuery(subcategoryId);
 
   if (!subcategory) {

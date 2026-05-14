@@ -83,6 +83,18 @@ export const getAllSubCategoriesByCategoryID = async (categoryId: number) => {
   return rows;
 };
 
+export const getAllActiveSubcategoriesQuery = async () => {
+  const [rows] = await pool.execute<(Subcategory & RowDataPacket)[]>(
+    `
+      SELECT *
+      FROM subcategories
+      WHERE is_active = TRUE
+      ORDER BY id DESC
+    `,
+  );
+  return rows
+}
+
 export const getSubcategoryByIdQuery = async (id: number) => {
   const [rows] = await pool.execute<(Subcategory & RowDataPacket)[]>(
     `

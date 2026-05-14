@@ -23,6 +23,7 @@ const handleProductError = (error: unknown, next: NextFunction) => {
   return next(error);
 };
 
+
 export const createProductController = async (
   req: Request,
   res: Response,

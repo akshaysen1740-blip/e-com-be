@@ -4,6 +4,7 @@ import {
   createSubcategoryQuery,
   findCategoryByIdQuery,
   findSubcategoryByNameQuery,
+  getAllActiveSubcategoriesQuery,
   getAllSubCategoriesByCategoryID,
   getSubcategoryByIdQuery,
   softDeleteSubcategoryQuery,
@@ -39,7 +40,11 @@ export const createSubcategoryService = async (data: CreateSubcategoryDto) => {
   };
 };
 
-export const getAllSubcategoriesService = async (categoryId: number) => {
+export const getAllSubcategoriesService = async (categoryId?: number) => {
+  console.log(categoryId, "<< categroyId")
+  if(categoryId == undefined){
+    return getAllActiveSubcategoriesQuery();
+  }
   const category = await findCategoryByIdQuery(categoryId);
 
   if (!category) {

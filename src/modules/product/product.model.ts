@@ -63,9 +63,10 @@ export const createProductQuery = async (
         compare_price,
         stock,
         thumbnail_url,
+        category_id,
         created_by
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
       data.subcategoryId,
@@ -77,6 +78,7 @@ export const createProductQuery = async (
       data.comparePrice || null,
       data.stock || 0,
       data.thumbnailUrl || null,
+      data.categoryId || null,
       data.createdBy,
     ],
   );
@@ -94,6 +96,19 @@ export const getAllProductsBySubcategoryIdQuery = async (subcategoryId: number) 
       ORDER BY id DESC
     `,
     [subcategoryId],
+  );
+
+  return rows;
+};
+
+export const getAllProductsQuery = async () => {
+  const [rows] = await pool.execute<(Product & RowDataPacket)[]>(
+    `
+      SELECT *
+      FROM products
+      WHERE is_active = TRUE
+      ORDER BY id DESC
+    `,
   );
 
   return rows;
