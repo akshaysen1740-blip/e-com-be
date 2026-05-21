@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  createPaginationQuerySchema,
+  optionalPositiveIntNumber as sharedOptionalPositiveIntNumber,
+} from "../../utills/queryParams";
 
 const preprocessNumber = (value: unknown) => {
   if (value === undefined || value === null || value === "") {
@@ -76,6 +80,6 @@ export const productIdSchema = z.object({
   id: positiveIntNumber("Product id"),
 });
 
-export const productSubcategoryIdSchema = z.object({
-  subcategoryId: optionalPositiveIntNumber("Subcategory id"),
+export const productQuerySchema = createPaginationQuerySchema({
+  subcategoryId: sharedOptionalPositiveIntNumber("Subcategory id"),
 });

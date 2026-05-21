@@ -10,8 +10,8 @@ import {
 } from "./subcategory.service";
 import {
   createSubcategorySchema,
-  subcategoryCategoryIdSchema,
   subcategoryIdSchema,
+  subcategoryQuerySchema,
   updateSubcategorySchema,
 } from "./subcategory.validation";
 
@@ -51,14 +51,13 @@ export const getSubcategoriesController = async (
   next: NextFunction,
 ) => {
   try {
-    const { categoryId } = subcategoryCategoryIdSchema.parse(req.query);
-    console.log(categoryId, "categoryId");
-    const result = await getAllSubcategoriesService(categoryId);
+    const queryParams = subcategoryQuerySchema.parse(req.query);
+    const result = await getAllSubcategoriesService(queryParams);
 
-    console.log(result, "result");
     res.status(200).json({
       success: true,
-      data: result,
+      data: result.items,
+      pagination: result.pagination,
     });
   } catch (error) {
     handleSubcategoryError(error, next);

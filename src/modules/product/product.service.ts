@@ -1,4 +1,8 @@
 import { AppError } from "../../utills/AppErrors";
+import {
+  buildPaginationMeta,
+  normalizePagination,
+} from "../../utills/queryParams";
 import { slugify } from "../../utills/slugyfy";
 import { findCategoryByIdQuery } from "../subcategory/subcategory.model";
 import {
@@ -10,8 +14,13 @@ import {
   getProductByIdQuery,
   softDeleteProductQuery,
   updateProductQuery,
+  createProductImagesQuery,
 } from "./product.model";
-import { CreateProductDto, UpdateProductDto } from "./product.types";
+import {
+  CreateProductDto,
+  ProductQueryParams,
+  UpdateProductDto,
+} from "./product.types";
 
 const validateComparePrice = (price?: number, comparePrice?: number) => {
   if (
@@ -46,26 +55,48 @@ export const createProductService = async (data: CreateProductDto) => {
   validateComparePrice(data.price, data.comparePrice);
 
   const slug = slugify(data.name);
-  const productId = await createProductQuery(data, slug);
-
-  return {
-    id: productId,
-    message: "Product created successfully",
-  };
 };
 
-export const getAllProductsService = async (subcategoryId?: number) => {
-  if (subcategoryId === undefined) {
-    return getAllProductsQuery();
+export const getAllProductsService = async (
+  queryParams: ProductQueryParams,
+) => {
+  const paginationParams = normalizePagination(
+    queryParams.page,
+    queryParams.limit,
+  );
+
+  if (queryParams.subcategoryId === undefined) {
+    const result = await getAllProductsQuery(paginationParams);
+
+    return {
+      items: result.items,
+      pagination: buildPaginationMeta(
+        paginationParams.page,
+        paginationParams.limit,
+        result.total,
+      ),
+    };
   }
 
-  const subcategory = await findSubcategoryByIdQuery(subcategoryId);
+  const subcategory = await findSubcategoryByIdQuery(queryParams.subcategoryId);
 
   if (!subcategory) {
     throw new AppError("Subcategory not found", 404);
   }
 
-  return getAllProductsBySubcategoryIdQuery(subcategoryId);
+  const result = await getAllProductsBySubcategoryIdQuery(
+    queryParams.subcategoryId,
+    paginationParams,
+  );
+
+  return {
+    items: result.items,
+    pagination: buildPaginationMeta(
+      paginationParams.page,
+      paginationParams.limit,
+      result.total,
+    ),
+  };
 };
 
 export const getProductByIdService = async (id: number) => {

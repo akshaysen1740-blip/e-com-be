@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 
 import {
+  categoryQuerySchema,
   categoryIdSchema,
   createCategorySchema,
   updateCategorySchema,
@@ -38,16 +39,18 @@ export const createCategoryController = async (
 
 
 export const getAllCategoriesController = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const result = await getAllCategoriesService();
+    const queryParams = categoryQuerySchema.parse(req.query);
+    const result = await getAllCategoriesService(queryParams);
 
     res.status(200).json({
       success: true,
-      data: result,
+      data: result.items,
+      pagination: result.pagination,
     });
   } catch (error) {
     next(error);

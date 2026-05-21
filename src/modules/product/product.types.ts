@@ -1,3 +1,5 @@
+import { QueryParams } from "../../utills/queryParams";
+
 export interface Product {
   id: number;
   subcategory_id: number;
@@ -23,9 +25,17 @@ export interface CreateProductDto {
   price: number;
   comparePrice?: number;
   stock?: number;
-  thumbnailUrl?: string;
+  images?: ImageStack | null;
   createdBy: number;
   categoryId : number
+}
+
+export interface ImageStack {
+  original_url: string;
+  medium_url: string;
+  thumbnail_url: string;
+  tiny_url: string;
+  is_primary: boolean;
 }
 
 export interface UpdateProductDto {
@@ -38,3 +48,7 @@ export interface UpdateProductDto {
   stock?: number;
   thumbnailUrl?: string;
 }
+
+export type ProductQueryParams = QueryParams<{
+  subcategoryId?: number;
+}>;

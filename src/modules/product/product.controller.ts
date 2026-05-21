@@ -11,7 +11,7 @@ import {
 import {
   createProductSchema,
   productIdSchema,
-  productSubcategoryIdSchema,
+  productQuerySchema,
   updateProductSchema,
 } from "./product.validation";
 
@@ -52,12 +52,13 @@ export const getProductsController = async (
   next: NextFunction,
 ) => {
   try {
-    const { subcategoryId } = productSubcategoryIdSchema.parse(req.query);
-    const result = await getAllProductsService(subcategoryId);
+    const queryParams = productQuerySchema.parse(req.query);
+    const result = await getAllProductsService(queryParams);
 
     res.status(200).json({
       success: true,
-      data: result,
+      data: result.items,
+      pagination: result.pagination,
     });
   } catch (error) {
     handleProductError(error, next);

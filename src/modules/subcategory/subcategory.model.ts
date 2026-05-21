@@ -1,5 +1,6 @@
 import pool from "../../config/db";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
+import { PaginationParams } from "../../utills/queryParams";
 import {
   CreateSubcategoryDto,
   Subcategory,
@@ -68,32 +69,71 @@ export const createSubcategoryQuery = async (
   return result.insertId;
 };
 
-export const getAllSubCategoriesByCategoryID = async (categoryId: number) => {
-  const [rows] = await pool.execute<(Subcategory & RowDataPacket)[]>(
+export const getAllSubCategoriesByCategoryID = async (
+  categoryId: number,
+  { limit, offset }: PaginationParams,
+) => {
+  const safeCategoryId = Math.trunc(categoryId);
+  const safeOffset = Math.max(0, Math.trunc(offset));
+  const safeLimit = Math.max(1, Math.trunc(limit));
+
+  const [rows] = await pool.query<(Subcategory & RowDataPacket)[]>(
     `
       SELECT *
       FROM subcategories
       WHERE is_active = TRUE
-        AND category_id = ?
+        AND category_id = ${safeCategoryId}
       ORDER BY id DESC
+      LIMIT ${safeOffset}, ${safeLimit}
+    `,
+  );
+
+  const [countRows] = await pool.execute<(RowDataPacket & { total: number })[]>(
+    `
+      SELECT COUNT(*) AS total
+      FROM subcategories
+      WHERE is_active = TRUE
+        AND category_id = ?
     `,
     [categoryId],
   );
 
-  return rows;
+  return {
+    items: rows,
+    total: countRows[0]?.total ?? 0,
+  };
 };
 
-export const getAllActiveSubcategoriesQuery = async () => {
-  const [rows] = await pool.execute<(Subcategory & RowDataPacket)[]>(
+export const getAllActiveSubcategoriesQuery = async ({
+  limit,
+  offset,
+}: PaginationParams) => {
+  const safeOffset = Math.max(0, Math.trunc(offset));
+  const safeLimit = Math.max(1, Math.trunc(limit));
+
+  const [rows] = await pool.query<(Subcategory & RowDataPacket)[]>(
     `
       SELECT *
       FROM subcategories
       WHERE is_active = TRUE
       ORDER BY id DESC
+      LIMIT ${safeOffset}, ${safeLimit}
     `,
   );
-  return rows
-}
+
+  const [countRows] = await pool.execute<(RowDataPacket & { total: number })[]>(
+    `
+      SELECT COUNT(*) AS total
+      FROM subcategories
+      WHERE is_active = TRUE
+    `,
+  );
+
+  return {
+    items: rows,
+    total: countRows[0]?.total ?? 0,
+  };
+};
 
 export const getSubcategoryByIdQuery = async (id: number) => {
   const [rows] = await pool.execute<(Subcategory & RowDataPacket)[]>(

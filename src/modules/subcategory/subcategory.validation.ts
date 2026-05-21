@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  createPaginationQuerySchema,
+  optionalPositiveIntNumber,
+} from "../../utills/queryParams";
 
 export const createSubcategorySchema = z.object({
   categoryId: z.coerce
@@ -28,30 +32,6 @@ export const subcategoryIdSchema = z.object({
     .positive("Subcategory id must be a positive number"),
 });
 
-const preprocessNumber = (value: unknown) => {
-  if (value === undefined || value === null || value === "") {
-    return value;
-  }
-
-  const parsedValue =
-    typeof value === "string" ? Number(value.trim()) : Number(value);
-
-  return Number.isNaN(parsedValue) ? value : parsedValue;
-};
-
-const positiveIntNumber = (fieldLabel: string) =>
-  z.preprocess(
-    preprocessNumber,
-    z
-      .number({ error: `${fieldLabel} must be a valid number` })
-      .int(`${fieldLabel} must be an integer`)
-      .positive(`${fieldLabel} must be a positive number`),
-  );
-
-
-const optionalPositiveIntNumber = (fieldLabel: string) =>
-  z.preprocess(preprocessNumber, positiveIntNumber(fieldLabel).optional());
-
-export const subcategoryCategoryIdSchema = z.object({
+export const subcategoryQuerySchema = createPaginationQuerySchema({
   categoryId: optionalPositiveIntNumber("Category id"),
 });

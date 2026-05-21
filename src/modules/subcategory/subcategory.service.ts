@@ -1,6 +1,10 @@
 import { AppError } from "../../utills/AppErrors";
 import { slugify } from "../../utills/slugyfy";
 import {
+  buildPaginationMeta,
+  normalizePagination,
+} from "../../utills/queryParams";
+import {
   createSubcategoryQuery,
   findCategoryByIdQuery,
   findSubcategoryByNameQuery,
@@ -12,6 +16,7 @@ import {
 } from "./subcategory.model";
 import {
   CreateSubcategoryDto,
+  SubcategoryQueryParams,
   UpdateSubcategoryDto,
 } from "./subcategory.types";
 
@@ -40,18 +45,45 @@ export const createSubcategoryService = async (data: CreateSubcategoryDto) => {
   };
 };
 
-export const getAllSubcategoriesService = async (categoryId?: number) => {
-  console.log(categoryId, "<< categroyId")
-  if(categoryId == undefined){
-    return getAllActiveSubcategoriesQuery();
+export const getAllSubcategoriesService = async (
+  queryParams: SubcategoryQueryParams,
+) => {
+  const paginationParams = normalizePagination(
+    queryParams.page,
+    queryParams.limit,
+  );
+
+  if (queryParams.categoryId === undefined) {
+    const result = await getAllActiveSubcategoriesQuery(paginationParams);
+
+    return {
+      items: result.items,
+      pagination: buildPaginationMeta(
+        paginationParams.page,
+        paginationParams.limit,
+        result.total,
+      ),
+    };
   }
-  const category = await findCategoryByIdQuery(categoryId);
+  const category = await findCategoryByIdQuery(queryParams.categoryId);
 
   if (!category) {
     throw new AppError("Category not found", 404);
   }
 
-  return getAllSubCategoriesByCategoryID(categoryId);
+  const result = await getAllSubCategoriesByCategoryID(
+    queryParams.categoryId,
+    paginationParams,
+  );
+
+  return {
+    items: result.items,
+    pagination: buildPaginationMeta(
+      paginationParams.page,
+      paginationParams.limit,
+      result.total,
+    ),
+  };
 };
 
 export const getSubcategoryByIdService = async (id: number) => {

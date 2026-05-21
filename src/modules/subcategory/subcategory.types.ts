@@ -1,3 +1,5 @@
+import { QueryParams } from "../../utills/queryParams";
+
 export interface Subcategory {
   id: number;
   category_id: number;
@@ -22,3 +24,7 @@ export interface UpdateSubcategoryDto {
   name?: string;
   description?: string;
 }
+
+export type SubcategoryQueryParams = QueryParams<{
+  categoryId?: number;
+}>;

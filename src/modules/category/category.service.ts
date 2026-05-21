@@ -1,13 +1,21 @@
 import { slugify } from "../../utills/slugyfy";
 import { AppError } from "../../utills/AppErrors";
 import {
+  buildPaginationMeta,
+  normalizePagination,
+} from "../../utills/queryParams";
+import {
   createCategoryQuery,
   getAllCategoriesQuery,
   getCategoryByIdQuery,
   softDeleteCategoryQuery,
   updateCategoryQuery,
 } from "./category.model";
-import { CreateCategoryDto, UpdateCategoryDto } from "./category.types";
+import {
+  CategoryQueryParams,
+  CreateCategoryDto,
+  UpdateCategoryDto,
+} from "./category.types";
 
 export const createCategoryService = async (
   data: CreateCategoryDto
@@ -22,8 +30,21 @@ export const createCategoryService = async (
   };
 };
 
-export const getAllCategoriesService = async () => {
-  return getAllCategoriesQuery();
+export const getAllCategoriesService = async (queryParams: CategoryQueryParams) => {
+  const paginationParams = normalizePagination(
+    queryParams.page,
+    queryParams.limit,
+  );
+  const result = await getAllCategoriesQuery(paginationParams);
+
+  return {
+    items: result.items,
+    pagination: buildPaginationMeta(
+      paginationParams.page,
+      paginationParams.limit,
+      result.total,
+    ),
+  };
 };
 
 export const getCategoryByIdService = async (id: number) => {

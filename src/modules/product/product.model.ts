@@ -1,10 +1,8 @@
 import pool from "../../config/db";
-import { ResultSetHeader, RowDataPacket } from "mysql2";
-import {
-  CreateProductDto,
-  Product,
-  UpdateProductDto,
-} from "./product.types";
+import { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2";
+import { PaginationParams } from "../../utills/queryParams";
+import { CreateProductDto, Product, UpdateProductDto } from "./product.types";
+import { AppError } from "../../utills/AppErrors";
 
 export const findSubcategoryByIdQuery = async (subcategoryId: number) => {
   const [rows] = await pool.execute<RowDataPacket[]>(
@@ -47,12 +45,48 @@ export const findProductByNameQuery = async (
   return rows[0] || null;
 };
 
+export const createProductImagesQuery = async ( connection: PoolConnection, data: any) => {
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      `
+      INSERT INTO product_images (
+        product_id,
+        originial_url,
+        thumbnail_url,
+        medium_url,
+        tiny_url,
+        is_primary,
+        created_by
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `,
+      [
+        data.product_id,
+        data.originial_url,
+        data.thumbnail_url,
+        data.medium_url,
+        data.tiny_url,
+        data.is_primary,
+        data.created_by,
+      ],
+    );
+    return result.insertId;
+  } catch (err: any) {
+    if (err.code === "ER_DUP_ENTRY") {
+      throw new AppError("Product already exists", 409);
+    }
+    throw err;
+  }
+};
+
 export const createProductQuery = async (
+  connection: PoolConnection,
   data: CreateProductDto,
   slug: string,
 ) => {
-  const [result] = await pool.execute<ResultSetHeader>(
-    `
+  try {
+    const [result] = await pool.execute<ResultSetHeader>(
+      `
       INSERT INTO products (
         subcategory_id,
         name,
@@ -68,50 +102,99 @@ export const createProductQuery = async (
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
-    [
-      data.subcategoryId,
-      data.name,
-      slug,
-      data.description || null,
-      data.sku || null,
-      data.price,
-      data.comparePrice || null,
-      data.stock || 0,
-      data.thumbnailUrl || null,
-      data.categoryId || null,
-      data.createdBy,
-    ],
-  );
+      [
+        data.subcategoryId,
+        data.name,
+        slug,
+        data.description || null,
+        data.sku || null,
+        data.price,
+        data.comparePrice || null,
+        data.stock || 0,
+        data.images?.thumbnail_url || null,
+        data.categoryId || null,
+        data.createdBy,
+      ],
+    );
 
-  return result.insertId;
+    return result.insertId;
+  } catch (err: any) {
+    if (err.code === "ER_DUP_ENTRY") {
+      throw new AppError("Product already exists", 409);
+    }
+
+    if (err.code === "ER_NO_REFERENCED_ROW_2") {
+      throw new AppError("Invalid category or subcategory", 400);
+    }
+
+    throw new AppError("Failed to create product", 500);
+  }
 };
 
-export const getAllProductsBySubcategoryIdQuery = async (subcategoryId: number) => {
-  const [rows] = await pool.execute<(Product & RowDataPacket)[]>(
+export const getAllProductsBySubcategoryIdQuery = async (
+  subcategoryId: number,
+  { limit, offset }: PaginationParams,
+) => {
+  const safeSubcategoryId = Math.trunc(subcategoryId);
+  const safeOffset = Math.max(0, Math.trunc(offset));
+  const safeLimit = Math.max(1, Math.trunc(limit));
+
+  const [rows] = await pool.query<(Product & RowDataPacket)[]>(
     `
       SELECT *
       FROM products
-      WHERE subcategory_id = ?
+      WHERE subcategory_id = ${safeSubcategoryId}
         AND is_active = TRUE
       ORDER BY id DESC
+      LIMIT ${safeOffset}, ${safeLimit}
+    `,
+  );
+
+  const [countRows] = await pool.execute<(RowDataPacket & { total: number })[]>(
+    `
+      SELECT COUNT(*) AS total
+      FROM products
+      WHERE subcategory_id = ?
+        AND is_active = TRUE
     `,
     [subcategoryId],
   );
 
-  return rows;
+  return {
+    items: rows,
+    total: countRows[0]?.total ?? 0,
+  };
 };
 
-export const getAllProductsQuery = async () => {
-  const [rows] = await pool.execute<(Product & RowDataPacket)[]>(
+export const getAllProductsQuery = async ({
+  limit,
+  offset,
+}: PaginationParams) => {
+  const safeOffset = Math.max(0, Math.trunc(offset));
+  const safeLimit = Math.max(1, Math.trunc(limit));
+
+  const [rows] = await pool.query<(Product & RowDataPacket)[]>(
     `
       SELECT *
       FROM products
       WHERE is_active = TRUE
       ORDER BY id DESC
+      LIMIT ${safeOffset}, ${safeLimit}
     `,
   );
 
-  return rows;
+  const [countRows] = await pool.execute<(RowDataPacket & { total: number })[]>(
+    `
+      SELECT COUNT(*) AS total
+      FROM products
+      WHERE is_active = TRUE
+    `,
+  );
+
+  return {
+    items: rows,
+    total: countRows[0]?.total ?? 0,
+  };
 };
 
 export const getProductByIdQuery = async (id: number) => {

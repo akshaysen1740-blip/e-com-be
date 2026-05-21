@@ -1,5 +1,6 @@
 import pool from "../../config/db";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
+import { PaginationParams } from "../../utills/queryParams";
 import {
   Category,
   CreateCategoryDto,
@@ -26,8 +27,14 @@ export const createCategoryQuery = async (
   return result.insertId;
 };
 
-export const getAllCategoriesQuery = async () => {
-  const [rows] = await pool.execute<(Category & RowDataPacket)[]>(
+export const getAllCategoriesQuery = async ({
+  limit,
+  offset,
+}: PaginationParams) => {
+  const safeOffset = Math.max(0, Math.trunc(offset));
+  const safeLimit = Math.max(1, Math.trunc(limit));
+
+  const [rows] = await pool.query<(Category & RowDataPacket & { product_count: number })[]>(
     `
       SELECT 
           c.*,
@@ -38,11 +45,23 @@ export const getAllCategoriesQuery = async () => {
           AND p.is_active = TRUE
       WHERE c.is_active = TRUE
       GROUP BY c.id
-      ORDER BY c.id DESC;
+      ORDER BY c.id DESC
+      LIMIT ${safeOffset}, ${safeLimit};
     `,
   );
 
-  return rows;
+  const [countRows] = await pool.execute<(RowDataPacket & { total: number })[]>(
+    `
+      SELECT COUNT(*) AS total
+      FROM categories c
+      WHERE c.is_active = TRUE
+    `,
+  );
+
+  return {
+    items: rows,
+    total: countRows[0]?.total ?? 0,
+  };
 };
 
 export const getCategoryByIdQuery = async (id: number) => {

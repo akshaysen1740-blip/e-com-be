@@ -1,3 +1,5 @@
+import { QueryParams } from "../../utills/queryParams";
+
 export interface CreateCategoryDto {
   name: string;
   description?: string;
@@ -19,3 +21,5 @@ export interface Category {
   updated_at?: Date;
   deleted_at?: Date | null;
 }
+
+export type CategoryQueryParams = QueryParams;
