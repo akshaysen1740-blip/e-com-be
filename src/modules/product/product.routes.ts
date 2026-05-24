@@ -4,6 +4,7 @@ import {
   createProductController,
   getProductByIdController,
   getProductsController,
+  getProuctDetailsContrller,
   softDeleteProductController,
   updateProductController,
 } from "./product.controller";
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.post("/", protect, createProductController);
 router.get("/", protect, getProductsController);
+router.get("/details/:id", protect, getProuctDetailsContrller);
 router.get("/:id", protect, getProductByIdController);
 router.put("/:id", protect, updateProductController);
 router.delete("/:id", protect, softDeleteProductController);

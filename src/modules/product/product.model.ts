@@ -1,7 +1,13 @@
 import pool from "../../config/db";
-import { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2";
+import { ResultSetHeader, RowDataPacket } from "mysql2";
+import { Pool, PoolConnection } from "mysql2/promise";
 import { PaginationParams } from "../../utills/queryParams";
-import { CreateProductDto, Product, UpdateProductDto } from "./product.types";
+import {
+  CreateProductDto,
+  ImageStack,
+  Product,
+  UpdateProductDto,
+} from "./product.types";
 import { AppError } from "../../utills/AppErrors";
 
 export const findSubcategoryByIdQuery = async (subcategoryId: number) => {
@@ -45,13 +51,16 @@ export const findProductByNameQuery = async (
   return rows[0] || null;
 };
 
-export const createProductImagesQuery = async ( connection: PoolConnection, data: any) => {
+export const createProductImagesQuery = async (
+  connection: PoolConnection,
+  data: ImageStack & { product_id: number; created_by: number },
+) => {
   try {
-    const [result] = await pool.execute<ResultSetHeader>(
+    const [result] = await connection.execute<ResultSetHeader>(
       `
       INSERT INTO product_images (
         product_id,
-        originial_url,
+        original_url,
         thumbnail_url,
         medium_url,
         tiny_url,
@@ -62,7 +71,7 @@ export const createProductImagesQuery = async ( connection: PoolConnection, data
     `,
       [
         data.product_id,
-        data.originial_url,
+        data.original_url,
         data.thumbnail_url,
         data.medium_url,
         data.tiny_url,
@@ -79,13 +88,56 @@ export const createProductImagesQuery = async ( connection: PoolConnection, data
   }
 };
 
+export const updateProductImagesQuery = async (
+  connection: PoolConnection,
+  productId: number,
+  data: ImageStack,
+) => {
+  const [result] = await connection.execute<ResultSetHeader>(
+    `
+      UPDATE product_images
+      SET
+        original_url = ?,
+        thumbnail_url = ?,
+        medium_url = ?,
+        tiny_url = ?,
+        is_primary = ?
+      WHERE product_id = ?
+    `,
+    [
+      data.original_url,
+      data.thumbnail_url,
+      data.medium_url,
+      data.tiny_url,
+      data.is_primary,
+      productId,
+    ],
+  );
+
+  return result;
+};
+
+export const getProductImagesByProductIdQuery = async (productId: number) => {
+  const [rows] = await pool.execute<(ImageStack & RowDataPacket)[]>(
+    `
+      SELECT original_url, medium_url, thumbnail_url, tiny_url, is_primary
+      FROM product_images
+      WHERE product_id = ?
+      LIMIT 1
+    `,
+    [productId],
+  );
+
+  return rows[0] || null;
+};
+
 export const createProductQuery = async (
   connection: PoolConnection,
   data: CreateProductDto,
   slug: string,
 ) => {
   try {
-    const [result] = await pool.execute<ResultSetHeader>(
+    const [result] = await connection.execute<ResultSetHeader>(
       `
       INSERT INTO products (
         subcategory_id,
@@ -111,7 +163,7 @@ export const createProductQuery = async (
         data.price,
         data.comparePrice || null,
         data.stock || 0,
-        data.images?.thumbnail_url || null,
+        data.thumbnailUrl || data.images?.thumbnail_url || null,
         data.categoryId || null,
         data.createdBy,
       ],
@@ -175,8 +227,9 @@ export const getAllProductsQuery = async ({
 
   const [rows] = await pool.query<(Product & RowDataPacket)[]>(
     `
-      SELECT *
-      FROM products
+      SELECT p.*, pi.original_url, pi.medium_url, pi.thumbnail_url, pi.tiny_url
+      FROM products p JOIN product_images pi
+      ON p.id = pi.product_id
       WHERE is_active = TRUE
       ORDER BY id DESC
       LIMIT ${safeOffset}, ${safeLimit}
@@ -191,8 +244,21 @@ export const getAllProductsQuery = async ({
     `,
   );
 
+  const data = rows.map((item: any) => {
+    const { thumbnail_url, original_url, medium_url, tiny_url, ...rest } = item;
+
+    return {
+      ...rest,
+      images: {
+        thumbnail_url,
+        original_url,
+        medium_url,
+        tiny_url,
+      },
+    };
+  });
   return {
-    items: rows,
+    items: data,
     total: countRows[0]?.total ?? 0,
   };
 };
@@ -216,6 +282,7 @@ export const updateProductQuery = async (
   id: number,
   data: UpdateProductDto,
   slug?: string,
+  db: Pool | PoolConnection = pool,
 ) => {
   const fields: string[] = [];
   const values: Array<number | string | null> = [];
@@ -255,14 +322,24 @@ export const updateProductQuery = async (
     values.push(data.stock);
   }
 
+  if (data.categoryId !== undefined) {
+    fields.push("category_id = ?");
+    values.push(data.categoryId);
+  }
+
   if (data.thumbnailUrl !== undefined) {
     fields.push("thumbnail_url = ?");
     values.push(data.thumbnailUrl || null);
   }
 
+  if (data.images !== undefined) {
+    fields.push("thumbnail_url = ?");
+    values.push(data.images?.thumbnail_url || null);
+  }
+
   values.push(id);
 
-  const [result] = await pool.execute<ResultSetHeader>(
+  const [result] = await db.execute<ResultSetHeader>(
     `
       UPDATE products
       SET ${fields.join(", ")}
@@ -287,4 +364,27 @@ export const softDeleteProductQuery = async (id: number) => {
   );
 
   return result;
+};
+
+export const getProductDetails = async (id: number) => {
+  const [rows] = await pool.execute<RowDataPacket[]>(
+    `
+    SELECT
+      p.*,
+      pi.original_url,
+      pi.medium_url,
+      pi.thumbnail_url,
+      pi.tiny_url,
+      pi.is_primary
+    FROM products p
+    LEFT JOIN product_images pi
+      ON p.id = pi.product_id
+    where p.id = ?
+      and p.is_active = true
+    LIMIT 1
+    `,
+    [id],
+  );
+
+  return rows[0] || null;
 };

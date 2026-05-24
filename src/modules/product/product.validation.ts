@@ -30,9 +30,9 @@ const optionalPositiveIntNumber = (fieldLabel: string) =>
 const positiveNumber = (fieldLabel: string) =>
   z.preprocess(
     preprocessNumber,
-    z.number({ error: `${fieldLabel} must be a valid number` }).positive(
-      `${fieldLabel} must be greater than 0`,
-    ),
+    z
+      .number({ error: `${fieldLabel} must be a valid number` })
+      .positive(`${fieldLabel} must be greater than 0`),
   );
 
 const optionalPositiveNumber = (fieldLabel: string) =>
@@ -47,6 +47,14 @@ const optionalNonNegativeNumber = (fieldLabel: string) =>
       .optional(),
   );
 
+const imageStackSchema = z.object({
+  original_url: z.string().trim().min(1, "Original image URL is required"),
+  medium_url: z.string().trim().min(1, "Medium image URL is required"),
+  thumbnail_url: z.string().trim().min(1, "Thumbnail image URL is required"),
+  tiny_url: z.string().trim().min(1, "Tiny image URL is required"),
+  is_primary: z.boolean(),
+});
+
 export const createProductSchema = z.object({
   subcategoryId: positiveIntNumber("Subcategory id"),
   name: z.string().min(2, "Name must be at least 2 characters").max(255),
@@ -55,26 +63,26 @@ export const createProductSchema = z.object({
   price: positiveNumber("Price"),
   comparePrice: optionalPositiveNumber("Compare price"),
   stock: optionalNonNegativeNumber("Stock"),
+  categoryId: positiveIntNumber("Category id"),
+  images: imageStackSchema,
   thumbnailUrl: z.string(),
-  categoryId : positiveIntNumber("Category id"),
 });
 
-export const updateProductSchema = createProductSchema
-  .partial()
-  .refine(
-    (data) =>
-      data.subcategoryId !== undefined ||
-      data.name !== undefined ||
-      data.description !== undefined ||
-      data.sku !== undefined ||
-      data.price !== undefined ||
-      data.comparePrice !== undefined ||
-      data.stock !== undefined ||
-      data.thumbnailUrl !== undefined,
-    {
+export const updateProductSchema = createProductSchema.partial().refine(
+  (data) =>
+    data.subcategoryId !== undefined ||
+    data.name !== undefined ||
+    data.description !== undefined ||
+    data.sku !== undefined ||
+    data.price !== undefined ||
+    data.comparePrice !== undefined ||
+    data.stock !== undefined ||
+    data.categoryId !== undefined ||
+    data.images !== undefined ||
+    data.thumbnailUrl || {
       message: "At least one field is required",
     },
-  );
+);
 
 export const productIdSchema = z.object({
   id: positiveIntNumber("Product id"),

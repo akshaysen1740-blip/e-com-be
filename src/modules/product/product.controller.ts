@@ -5,6 +5,7 @@ import {
   createProductService,
   getAllProductsService,
   getProductByIdService,
+  getProductDetailsService,
   softDeleteProductService,
   updateProductService,
 } from "./product.service";
@@ -31,7 +32,6 @@ export const createProductController = async (
 ) => {
   try {
     const validatedData = createProductSchema.parse(req.body);
-    console.log(validatedData)
     const result = await createProductService({
       ...validatedData,
       createdBy: (req as any).user.id,
@@ -110,6 +110,24 @@ export const softDeleteProductController = async (
   try {
     const { id } = productIdSchema.parse(req.params);
     const result = await softDeleteProductService(id);
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    handleProductError(error, next);
+  }
+};
+
+export const getProuctDetailsContrller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id } = productIdSchema.parse(req.params);
+    const result = await getProductDetailsService(id);
 
     res.status(200).json({
       success: true,

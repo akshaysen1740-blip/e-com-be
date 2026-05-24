@@ -18,7 +18,6 @@ export const protect = (req: any, res: Response, next: NextFunction) => {
     );
 
     req.user = decoded;
-    console.log(decoded, "<<,<<")
     next();
   } catch {
     return next(new AppError("Invalid token", 401));

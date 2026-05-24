@@ -27,7 +27,8 @@ export interface CreateProductDto {
   stock?: number;
   images?: ImageStack | null;
   createdBy: number;
-  categoryId : number
+  categoryId: number;
+  thumbnailUrl?: string;
 }
 
 export interface ImageStack {
@@ -47,6 +48,8 @@ export interface UpdateProductDto {
   comparePrice?: number;
   stock?: number;
   thumbnailUrl?: string;
+  categoryId?: number;
+  images?: ImageStack | null;
 }
 
 export type ProductQueryParams = QueryParams<{
